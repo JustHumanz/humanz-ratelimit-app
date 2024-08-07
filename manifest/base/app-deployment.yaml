@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: humanz-app
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: humanz-rate-limit-app
+  template:
+    metadata:
+      labels:
+        app: humanz-rate-limit-app
+    spec:
+      containers:
+      - name: rate-limit-app
+        image: hub.humanz.moe/humanz-ratelimit-app:v1.0.0
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
