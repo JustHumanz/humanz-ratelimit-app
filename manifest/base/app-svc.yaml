@@ -5,6 +5,6 @@ metadata:
 spec:
   ports:
   - port: 80
-    targetPort: 80
+    targetPort: 2525
   selector:
     app: humanz-rate-limit-app
