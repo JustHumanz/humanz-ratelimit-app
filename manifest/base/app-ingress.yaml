@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rate-limit-app
+  annotations:
+    cert-manager.io/issuer: "letsencrypt-humanz"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - rate-limit.kano2525.dev
+    secretName: rate-limit-tls
+
+  rules:
+    - host: rate-limit.kano2525.dev
+      http:
+        paths:
+          - pathType: Prefix
+            backend:
+              service:
+                name: rate-limit
+                port:
+                  number: 80
+            path: /
