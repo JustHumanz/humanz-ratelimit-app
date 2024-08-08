@@ -28,41 +28,55 @@ jobs:
         push: true
         tags: hub.humanz.moe/humanz-ratelimit-app:${{ env.RELEASE_VERSION }}
 
-  ## Argocd deploy
-    - 
-      name: Log in
-      uses: clowdhaus/argo-cd-action/@main
-      with:
-        version: 2.3.3
-        command: login argocd.kano2525.dev --grpc-web
-        options: >
-          --username 
-          admin 
-          --password 
-          ${{ secrets.ARGOCD_PASSWORD }}
-    - 
-      name: Set image tag
-      uses: clowdhaus/argo-cd-action/@main
-      with:
-        version: 2.3.3
-        command: app set ${{ env.APP_NAME }}
-        options: >
-          --revision ${{ github.sha }}  
-          --kustomize-image hub.humanz.moe/humanz-ratelimit-app=hub.humanz.moe/humanz-ratelimit-app:${{ env.RELEASE_VERSION }}
-    - 
-      name: Sync
-      uses: clowdhaus/argo-cd-action/@main
-      with:
-        version: 2.3.3
-        command: app sync ${{ env.APP_NAME }}
-        options: >
-                      --timeout 300
-    - 
-      name: Wait
-      uses: clowdhaus/argo-cd-action/@main
-      with:
-        version: 2.3.3
-        command: app wait ${{ env.APP_NAME }}
-        options: >
-          --health
-          --timeout 600
+
+  deploy:
+    needs: build  
+    environment:
+      name: prod    
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v2
+      - 
+        name: Set env
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+
+    ## Argocd deploy
+      - 
+        name: Log in
+        uses: clowdhaus/argo-cd-action/@main
+        with:
+          version: 2.3.3
+          command: login argocd.kano2525.dev --grpc-web
+          options: >
+            --username 
+            admin 
+            --password 
+            ${{ secrets.ARGOCD_PASSWORD }}
+      - 
+        name: Set image tag
+        uses: clowdhaus/argo-cd-action/@main
+        with:
+          version: 2.3.3
+          command: app set ${{ vars.APP_NAME }}
+          options: >
+            --revision ${{ github.sha }}  
+            --kustomize-image hub.humanz.moe/humanz-ratelimit-app=hub.humanz.moe/humanz-ratelimit-app:${{ env.RELEASE_VERSION }}
+      - 
+        name: Sync
+        uses: clowdhaus/argo-cd-action/@main
+        with:
+          version: 2.3.3
+          command: app sync ${{ vars.APP_NAME }}
+          options: >
+                        --timeout 300
+      - 
+        name: Wait
+        uses: clowdhaus/argo-cd-action/@main
+        with:
+          version: 2.3.3
+          command: app wait ${{ vars.APP_NAME }}
+          options: >
+            --health
+            --timeout 600
