@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"net"
 	"net/http"
 	"sync"
 
@@ -15,6 +13,17 @@ var (
 	userIp   = make(map[string]*rate.Limiter)
 	reqLimit = rate.NewLimiter(1, 5)
 )
+
+func getUserIP(r *http.Request) string {
+	IPAddress := r.Header.Get("X-Real-Ip")
+	if IPAddress == "" {
+		IPAddress = r.Header.Get("X-Forwarded-For")
+	}
+	if IPAddress == "" {
+		IPAddress = r.RemoteAddr
+	}
+	return IPAddress
+}
 
 func getUserLimit(ip string) *rate.Limiter {
 	mu.Lock()
@@ -29,24 +38,9 @@ func getUserLimit(ip string) *rate.Limiter {
 
 }
 
-func getUserIP(raddr string) (string, error) {
-	ip, _, err := net.SplitHostPort(raddr)
-	if err != nil {
-		return "", err
-	}
-
-	return ip, nil
-
-}
-
 func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		srcAddr, err := getUserIP(r.RemoteAddr)
-		if err != nil {
-			log.Print(err.Error())
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-
-		}
+		srcAddr := getUserIP(r)
 
 		usrReq := getUserLimit(srcAddr)
 
@@ -60,14 +54,9 @@ func main() {
 	})
 
 	http.HandleFunc("/kano", func(w http.ResponseWriter, r *http.Request) {
-		srcAddr, err := getUserIP(r.RemoteAddr)
-		if err != nil {
-			log.Print(err.Error())
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		srcAddr := getUserIP(r)
 
-		}
-
-		fmt.Fprint(w, "Hello", srcAddr)
+		fmt.Fprint(w, "Hello ", srcAddr)
 	})
 
 	if err := http.ListenAndServe(":2525", nil); err != nil {
