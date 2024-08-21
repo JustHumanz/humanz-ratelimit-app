@@ -4,14 +4,20 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	"golang.org/x/time/rate"
 )
 
+type userAttr struct {
+	usrLimit *rate.Limiter
+	timeout  time.Time
+}
+
 var (
 	mu       sync.Mutex
-	userIp   = make(map[string]*rate.Limiter)
-	reqLimit = rate.NewLimiter(1, 5)
+	userIp   = make(map[string]userAttr)
+	appLimit = rate.NewLimiter(1, 5)
 )
 
 func getUserIP(r *http.Request) string {
@@ -31,10 +37,13 @@ func getUserLimit(ip string) *rate.Limiter {
 
 	_, exists := userIp[ip]
 	if !exists {
-		userIp[ip] = reqLimit
+		userIp[ip] = userAttr{
+			usrLimit: appLimit,
+			timeout:  time.Now(),
+		}
 	}
 
-	return userIp[ip]
+	return userIp[ip].usrLimit
 
 }
 
@@ -58,6 +67,21 @@ func main() {
 
 		fmt.Fprint(w, "Hello ", srcAddr)
 	})
+
+	go func() {
+		for {
+			time.Sleep(1 * time.Minute)
+			mu.Lock()
+
+			for ip, usrTimeout := range userIp {
+				if time.Since(usrTimeout.timeout) > 5*time.Minute {
+					fmt.Println(fmt.Sprintf("%s not interact with app for %d, cleanup the struct", ip, 5*time.Minute))
+					delete(userIp, ip)
+				}
+			}
+			mu.Unlock()
+		}
+	}()
 
 	if err := http.ListenAndServe(":2525", nil); err != nil {
 		fmt.Printf("Server error: %v\n", err)
