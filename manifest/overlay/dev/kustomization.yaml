@@ -3,7 +3,9 @@ kind: Kustomization
 resources:
 - ./../../base
 
- images:
+nameSuffix: -dev
+namespace: humanz-dev
+images:
  - name: humanz-app
    newName: hub.humanz.moe/humanz-ratelimit-app
    newTag: v1.0.0-dev
@@ -16,6 +18,3 @@ patches:
       - op: replace
         path: /spec/rules/0/host
         value: dev.rate-limit.kano2525.dev
-
-nameSuffix: -dev
-namespace: humanz-dev
