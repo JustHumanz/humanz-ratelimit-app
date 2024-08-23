@@ -9,18 +9,5 @@ images:
  - name: humanz-app
    newName: hub.humanz.moe/humanz-ratelimit-app
    newTag: v1.0.0-dev
-
-patches:
-  - target:
-      kind: Ingress
-      name: rate-limit-app
-    patch: |-
-      - op: replace
-        path: /spec/rules/0/host
-        value: dev.rate-limit.kano2525.dev
-      - op: replace
-        path: /spec/tls/0/hosts/0
-        value: dev.rate-limit.kano2525.dev
-      - op: replace
-        path: /spec/tls/0/hosts/secretName
-        value: rate-limit-tls-dev
+patchesStrategicMerge:
+  - app-ingress-dev.yaml
